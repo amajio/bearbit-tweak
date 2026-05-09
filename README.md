@@ -1,6 +1,6 @@
 # bbvip
 - โชว์ปุ่มดาวน์โหลด
-- ซ่อนหมวดชมพู
+- ซ่อนหมวดสีรุ้ง
 - ปรับขนาดคอลัมม์รูป
 - ติดตั้ง > https://github.com/amajio/bbvip/raw/refs/heads/main/bearbit.user.js
 <img width="1529" height="836" alt="image" src="https://github.com/user-attachments/assets/2717db01-f4c0-48d1-b64a-60ae81f0c14f" />
