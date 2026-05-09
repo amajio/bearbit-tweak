@@ -406,6 +406,12 @@
 
             const fileSizeSpan = vipButton.querySelector('span');
 
+            // Store original state
+            const originalState = {
+                html: vipButton.innerHTML,
+                cursor: vipButton.style.cursor
+            };
+
             vipButton.style.cursor = 'pointer';
             vipButton.style.display = 'inline-block';
             vipButton.innerHTML = '📥 ดาวน์โหลด ';
@@ -413,7 +419,6 @@
                 vipButton.appendChild(fileSizeSpan.cloneNode(true));
             }
             vipButton.title = 'คลิกเพื่อดาวน์โหลด';
-            vipButton.style.cursor = 'pointer';
 
             vipButton.removeEventListener('click', vipButton.clickHandler);
 
@@ -431,7 +436,11 @@
 
                 this.dataset.loading = 'true';
 
-                const currentHTML = this.innerHTML;
+                // Store current state before changing
+                const currentState = {
+                    html: this.innerHTML,
+                    cursor: this.style.cursor
+                };
 
                 this.innerHTML = '⏳ กำลังโหลด...';
                 this.style.cursor = 'wait';
@@ -446,7 +455,8 @@
                             this.innerHTML = '❌ ล้มเหลว';
                             this.style.cursor = 'pointer';
                             setTimeout(() => {
-                                this.innerHTML = currentHTML;
+                                this.innerHTML = currentState.html;
+                                this.style.cursor = currentState.cursor;
                                 this.dataset.loading = 'false';
                             }, 2000);
                             return;
@@ -464,15 +474,16 @@
 
                             this.href = fullDownloadUrl;
                             this.dataset.loading = 'false';
-
                             window.location.href = fullDownloadUrl;
-                            this.innerHTML = currentHTML;
+                            this.innerHTML = currentState.html;
+                            this.style.cursor = currentState.cursor;
                         } else {
                             console.log(`Download button not found for: ${storedUrl}`);
                             this.innerHTML = '❌ ไม่พบลิงก์';
                             this.style.cursor = 'pointer';
                             setTimeout(() => {
-                                this.innerHTML = currentHTML;
+                                this.innerHTML = currentState.html;
+                                this.style.cursor = currentState.cursor;
                                 this.dataset.loading = 'false';
                             }, 2000);
                         }
@@ -482,7 +493,8 @@
                         this.innerHTML = '❌ เครือข่ายผิดพลาด';
                         this.style.cursor = 'pointer';
                         setTimeout(() => {
-                            this.innerHTML = currentHTML;
+                            this.innerHTML = currentState.html;
+                            this.style.cursor = currentState.cursor;
                             this.dataset.loading = 'false';
                         }, 2000);
                     },
@@ -491,7 +503,8 @@
                         this.innerHTML = '⏰ เวลาหมด';
                         this.style.cursor = 'pointer';
                         setTimeout(() => {
-                            this.innerHTML = currentHTML;
+                            this.innerHTML = currentState.html;
+                            this.style.cursor = currentState.cursor;
                             this.dataset.loading = 'false';
                         }, 2000);
                     }
