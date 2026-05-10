@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      0.3.2
+// @version      0.3.3
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -18,6 +18,10 @@
 
 (function() {
     'use strict';
+
+    let previewContainer = null;
+    let currentLink = null;
+    let hideTimeout = null;
 
     // Default settings
     const defaultSettings = {
@@ -551,6 +555,173 @@
                 }
             });
     }
+
+    function checkIfImagesVisible() {
+        const toggleBtn = document.getElementById('toggle-posters-btn');
+        if (!toggleBtn) return true;
+
+        const btnText = toggleBtn.innerText || toggleBtn.textContent || '';
+        console.log('Button text:', btnText);
+
+        return btnText.includes('แสดงรูปภาพ');
+    }
+
+    function createPreviewContainer() {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.zIndex = '999999';
+        container.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        container.style.borderRadius = '12px';
+        container.style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)';
+        container.style.padding = '3px';
+        container.style.display = 'none';
+        container.style.pointerEvents = 'none';
+
+        const img = document.createElement('img');
+        img.style.maxHeight = '90vh';
+        img.style.maxWidth = '50vw';
+        img.style.width = 'auto';
+        img.style.height = 'auto';
+        img.style.objectFit = 'contain';
+        img.style.display = 'block';
+        img.style.borderRadius = '8px';
+
+        container.appendChild(img);
+        document.body.appendChild(container);
+
+        return container;
+    }
+
+    function centerPreview(container) {
+        if (!container) return;
+        container.style.left = '50%';
+        container.style.top = '50%';
+        container.style.transform = 'translate(-50%, -50%)';
+    }
+
+    function showPreview(imageUrl) {
+        console.log('Loading image:', imageUrl);
+
+        if (!previewContainer) {
+            previewContainer = createPreviewContainer();
+        }
+
+        const img = previewContainer.querySelector('img');
+
+        img.src = '';
+        img.alt = 'Loading...';
+
+        previewContainer.style.display = 'flex';
+        previewContainer.style.alignItems = 'center';
+        previewContainer.style.justifyContent = 'center';
+        centerPreview(previewContainer);
+
+        // Show loading state
+        img.style.opacity = '0.5';
+
+        const testImg = new Image();
+
+        testImg.onload = function() {
+            console.log('Image loaded successfully:', imageUrl);
+            img.src = imageUrl;
+            img.style.opacity = '1';
+        };
+
+        testImg.onerror = function() {
+            console.error('Failed to load image:', imageUrl);
+            img.alt = 'Failed to load image';
+            img.style.opacity = '1';
+
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '20px';
+            errorDiv.style.textAlign = 'center';
+            errorDiv.innerText = 'Failed to load image';
+
+            const oldError = previewContainer.querySelector('.error-msg');
+            if (oldError) oldError.remove();
+
+            errorDiv.className = 'error-msg';
+            previewContainer.appendChild(errorDiv);
+        };
+
+        testImg.src = imageUrl;
+        img.src = imageUrl;
+    }
+
+    function hidePreview() {
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+            const img = previewContainer.querySelector('img');
+            if (img) {
+                img.src = '';
+                img.style.opacity = '1';
+            }
+            // Remove error message if exists
+            const errorDiv = previewContainer.querySelector('.error-msg');
+            if (errorDiv) errorDiv.remove();
+        }
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        currentLink = null;
+    }
+
+    document.addEventListener('mouseover', function(event) {
+        if (!checkIfImagesVisible()) {
+            console.log('Images are hidden (button shows "แสดงรูปภาพ"), preview disabled');
+            return;
+        }
+
+        let target = event.target.closest('a');
+        if (!target) return;
+
+        const linkText = (target.innerText || target.textContent || '');
+        if (!linkText.includes('ดูรูป') && !linkText.includes('📷')) return;
+
+        const imageUrl = target.href;
+        if (!imageUrl) return;
+
+        console.log('Found ดูรูป link with href:', imageUrl);
+
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+
+        currentLink = target;
+        showPreview(imageUrl);
+    });
+
+    document.addEventListener('mouseout', function(event) {
+        let target = event.target.closest('a');
+        if (target && target === currentLink) {
+            hidePreview();
+        }
+    });
+
+    document.addEventListener('mouseleave', function() {
+        hidePreview();
+    });
+
+    window.addEventListener('resize', function() {
+        if (previewContainer && previewContainer.style.display !== 'none') {
+            centerPreview(previewContainer);
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        const toggleBtn = event.target.closest('#toggle-posters-btn');
+        if (toggleBtn) {
+            setTimeout(() => {
+                if (!checkIfImagesVisible()) {
+                    hidePreview();
+                }
+            }, 50);
+        }
+    });
+
 
     function init() {
         DownloadButton();
