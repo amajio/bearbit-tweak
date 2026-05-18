@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak [18-5-26]
 // @namespace    http://tampermonkey.net/
-// @version      18.5.26.1
+// @version      18.5.26
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
