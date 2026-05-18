@@ -13,8 +13,8 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
-// @updateURL    https://github.com/amajio/bearbit-tweak/raw/refs/heads/main/bearbit.user.js
-// @downloadURL  https://github.com/amajio/bearbit-tweak/raw/refs/heads/main/bearbit.user.js
+// @updateURL    https://raw.githubusercontent.com/amajio/bearbit-tweak/master/bearbit.user.js
+// @downloadURL  https://raw.githubusercontent.com/amajio/bearbit-tweak/master/bearbit.user.js
 // @connect      bearbit.org
 // ==/UserScript==
 
