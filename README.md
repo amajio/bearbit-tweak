@@ -5,6 +5,8 @@
 - ติดตั้ง Tampermonkey [คลิกที่นี่](https://www.tampermonkey.net/)
 - ติดตั้ง Script [คลิกที่นี่](https://github.com/amajio/bbvip/raw/refs/heads/main/bearbit.user.js)
   - *** ใช้ AI เขียน code ผิดพลาดตรงขออภัยด้วย ***
-<img width="1529" height="836" alt="image" src="https://github.com/user-attachments/assets/2717db01-f4c0-48d1-b64a-60ae81f0c14f" />
-<img width="1605" height="993" alt="image" src="https://github.com/user-attachments/assets/89b6553a-11fd-49d9-8942-0f98c0e089c5" />
+<img width="1443" height="846" alt="image" src="https://github.com/user-attachments/assets/f6bb9d72-4bce-4d19-9d35-e95849f3a539" />
+<img width="1370" height="907" alt="image" src="https://github.com/user-attachments/assets/71639da7-da42-4c55-a189-2e68944b8419" />
+<img width="598" height="516" alt="image" src="https://github.com/user-attachments/assets/b12296fe-97c0-48f4-b3e0-f58b7a656d6e" />
+
 
