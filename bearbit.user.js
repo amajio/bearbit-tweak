@@ -360,7 +360,7 @@
             <div class="bearbit-settings-group">
                 <label style="color: white !important;">ขนาดรูป:</label>
                 <select class="bearbit-settings-select" id="thumbnail-size-select">
-                    <option value="50px" ${settings.THUMBNAIL_SIZE === '50px' ? 'selected' : ''}>เล็ก</option>
+                    <option value="60px" ${settings.THUMBNAIL_SIZE === '60px' ? 'selected' : ''}>เล็ก</option>
                     <option value="100px" ${settings.THUMBNAIL_SIZE === '100px' ? 'selected' : ''}>ปกติ</option>
                     <option value="150px" ${settings.THUMBNAIL_SIZE === '150px' ? 'selected' : ''}>ใหญ่</option>
                 </select>
@@ -400,7 +400,7 @@
         const sizeSelect = document.getElementById('thumbnail-size-select');
         let thumbsize = 0;
         if(document.getElementById('minimal').checked){
-                thumbsize = '50px';
+                thumbsize = '60px';
         }else{
                 thumbsize = sizeSelect.value;
         }
