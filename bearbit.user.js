@@ -63,6 +63,18 @@
                 loop: false,
                 autoplayVideos: false,
                 openEffect: 'fade',
+                touchNavigation: true,
+                zoomable: true,
+                draggable: true,
+                dragToleranceX: 150,
+                dragToleranceY: 150,
+                onOpen: function() {
+                    const description = document.querySelector('.glightbox-description');
+                    if (description) {
+                        description.style.overflowY = 'auto';
+                        description.style.maxHeight = '80vh';
+                    }
+                }
             });
             _glightbox.open();
         });
@@ -323,9 +335,39 @@
 	    color: rgb(245, 162, 20);
     }
 
-}
+     /* Enable scrolling on GLightbox content for tall images */
+    .glightbox-container .glightbox-caption {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
 
+    .glightbox-mobile .glightbox-container .gslide-image img {
+        max-height: 80vh !important;
+        object-fit: contain;
+    }
+
+    /* Allow scrolling on the slide content */
+    .gslide-media {
+        overflow-y: auto !important;
+        max-height: 95vh !important;
+    }
+
+    /* Custom scrollbar styling */
+    .gslide-media::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .gslide-media::-webkit-scrollbar-track {
+        background: #333;
+    }
+
+    .gslide-media::-webkit-scrollbar-thumb {
+        background: #666;
+        border-radius: 4px;
+    }
 `);
+
+
 
     function createSettingsPanel() {
         // Remove existing panel if any
