@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         BearBit Tweak [20.5.26]
+// @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
 // @version      20.5.26
 // @description  BearBit Tweak
