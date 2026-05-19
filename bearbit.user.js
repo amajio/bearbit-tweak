@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.20
+// @version      26.5.20.0454
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -69,10 +69,23 @@
                 dragToleranceX: 150,
                 dragToleranceY: 150,
                 onOpen: function() {
-                    const description = document.querySelector('.glightbox-description');
-                    if (description) {
-                        description.style.overflowY = 'auto';
-                        description.style.maxHeight = '80vh';
+                    // Force reset the container transform to 0
+                    const mediaContainer = document.querySelector('.gslide-media');
+                    if (mediaContainer) {
+                        // Override the transform to remove horizontal offset
+                        mediaContainer.style.transform = 'translate3d(0px, 0px, 0px)';
+
+                        const observer = new MutationObserver(function(mutations) {
+                            mutations.forEach(function(mutation) {
+                                if (mutation.attributeName === 'style') {
+                                    const currentTransform = mediaContainer.style.transform;
+                                    if (currentTransform && currentTransform.includes('translate3d(-')) {
+                                        mediaContainer.style.transform = 'translate3d(0px, 0px, 0px)';
+                                    }
+                                }
+                            });
+                        });
+                        observer.observe(mediaContainer, { attributes: true });
                     }
                 }
             });
