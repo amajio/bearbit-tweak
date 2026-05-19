@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         BearBit Tweak [18-5-26]
+// @name         BearBit Tweak [20.5.26]
 // @namespace    http://tampermonkey.net/
-// @version      18.5.26
+// @version      20.5.26
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -20,6 +20,53 @@
 
 (function() {
     'use strict';
+
+    // Shared GLightbox instance (lazily initialised on first use)
+    let _glightbox = null;
+
+    // Load GLightbox into the page context (bypasses userscript sandbox proxy issues)
+    function loadGLightbox(callback) {
+        if (document.getElementById('glightbox-js')) {
+            // Already injected — wait for it if not yet ready
+            if (typeof unsafeWindow.GLightbox === 'function') {
+                callback();
+            } else {
+                document.getElementById('glightbox-js').addEventListener('load', callback);
+            }
+            return;
+        }
+
+        // Inject CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css';
+        document.head.appendChild(link);
+
+        // Inject JS into page context so GLightbox runs outside the sandbox
+        const script = document.createElement('script');
+        script.id = 'glightbox-js';
+        script.src = 'https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js';
+        script.onload = callback;
+        document.head.appendChild(script);
+    }
+
+    function openGLightbox(imageUrl) {
+        loadGLightbox(() => {
+            if (_glightbox) {
+                _glightbox.destroy();
+                _glightbox = null;
+            }
+            // Use unsafeWindow.GLightbox so it runs in page context, not sandbox
+            _glightbox = unsafeWindow.GLightbox({
+                elements: [{ href: imageUrl, type: 'image' }],
+                touchNavigation: true,
+                loop: false,
+                autoplayVideos: false,
+                openEffect: 'fade',
+            });
+            _glightbox.open();
+        });
+    }
 
     let previewContainer = null;
     let currentLink = null;
@@ -626,9 +673,20 @@
             btnImage.textContent = `📷 รูป`;
             btnImage.style.cursor = 'pointer';
             btnImage.className = 'bb-preview';
-            btnImage.href = camsImg;
-            btnImage.target = '_blank';
+            btnImage.href = '#';
             btnImage.title = 'ดูรูปตัวอย่าง';
+
+            if (camsImg) {
+                btnImage.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openGLightbox(camsImg);
+                });
+            } else {
+                btnImage.style.opacity = '0.4';
+                btnImage.style.cursor = 'default';
+                btnImage.title = 'ไม่มีรูปตัวอย่าง';
+            }
 
             const btnBookmark = document.createElement('a');
             btnBookmark.textContent = `★`;
@@ -817,7 +875,7 @@
 
         allDetailsLinks.forEach(link => {
             let currentRow = link.closest('tr');
-            const camsImg = currentRow.querySelector(`${previewClass}`);
+            const camsImg = currentRow.querySelector('img[src="pic/cams.gif "]')?.closest('a');
             const fileArea = currentRow.querySelector('.hover-area');
 
             if (!fileArea) return;
