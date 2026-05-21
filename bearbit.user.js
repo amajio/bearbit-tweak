@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.20.0454
+// @version      26.5.21.1032
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -307,8 +307,8 @@
 
      /* Style bearbit actions button */
      .bb-actions {
-        margin-top: 8px;
-        margin-bottom: 5px;
+        margin-top: 3px;
+        margin-bottom: 3px;
         display: flex;
         gap: 6px;
         align-items: center;
@@ -713,6 +713,7 @@
             const filename_div = document.createElement('div');
             filename_div.className = 'hover-area';
             filename_div.style.display = 'inline-block';
+            filename_div.style.padding = '5px';
             link.parentNode.insertBefore(filename_div, link);
             filename_div.appendChild(link);
 
