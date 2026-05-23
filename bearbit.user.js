@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.21.1032
+// @version      26.5.24.0318
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -23,6 +23,12 @@
 
     // Shared GLightbox instance (lazily initialised on first use)
     let _glightbox = null;
+    const noimage = 'https://bearbit.org/no_poster.jpg';
+    const imageSize = {
+        'small': 75,
+        'normal': 140,
+        'large': 180,
+    };
 
     // Load GLightbox into the page context (bypasses userscript sandbox proxy issues)
     function loadGLightbox(callback) {
@@ -106,17 +112,17 @@
     const defaultSettings = {
         HIDE_GAY: true,
         MINIMAL: false,
-        THUMBNAIL_SIZE: "100px"
+        PREVIEW: false,
+        THUMBNAIL_SIZE: 140
     };
 
     // Load settings from storage or use defaults
     const settings = {
         HIDE_GAY: GM_getValue('HIDE_GAY', defaultSettings.HIDE_GAY),
         MINIMAL: GM_getValue('MINIMAL', defaultSettings.MINIMAL),
+        PREVIEW: GM_getValue('PREVIEW', defaultSettings.PREVIEW),
         THUMBNAIL_SIZE: GM_getValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE)
     };
-
-    const thumbnailSizeNum = settings.THUMBNAIL_SIZE.replace('px', '');
 
     // Safe CSS injection function
     function addStyle(css) {
@@ -150,11 +156,11 @@
       }
 
       .poster-column img {
-         width: ${settings.THUMBNAIL_SIZE} !important;
-         height: auto !important;
-         min-height: 80px !important;
-         max-height: calc(${thumbnailSizeNum}px * 1.3) !important;
-         object-fit: contain !important;
+         /*width: ${settings.THUMBNAIL_SIZE}px !important;*/
+         height: ${settings.THUMBNAIL_SIZE}px !important;
+         /*max-height: calc(${settings.THUMBNAIL_SIZE}px * 1.3) !important;*/
+         max-height: ${settings.THUMBNAIL_SIZE}px !important;
+         /*object-fit: contain !important;*/
          border: 0px !important;
       }
 
@@ -212,7 +218,81 @@
          margin-bottom: 8px !important;
          cursor: pointer !important;
          color: white !important;
+         position: relative;
      }
+
+     /* Tooltip container for the info icon */
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        margin-left: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.2);
+        cursor: help;
+        position: relative;
+    }
+
+    /* Tooltip text */
+    .info-icon .tooltip-text {
+        visibility: hidden;
+        opacity: 0;
+        width: 260px;
+        background-color: #1D2E27;
+        color: #fff;
+        text-align: left;
+        border-radius: 8px;
+        padding: 10px 12px;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: normal;
+        font-size: 12px;
+        font-weight: normal;
+        line-height: 1.5;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+    }
+
+    /* Tooltip arrow */
+    .info-icon .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -6px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: #1a1a2e transparent transparent transparent;
+    }
+
+    /* Show tooltip on hover */
+    .info-icon:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* Tooltip list styling */
+    .tooltip-text ul {
+        margin: 0;
+        padding-left: 16px;
+    }
+
+    .tooltip-text li {
+        margin: 4px 0;
+    }
+
+    .tooltip-text strong {
+        color: #ffd966;
+    }
 
      .bearbit-settings-checkbox {
          margin-right: 8px !important;
@@ -308,7 +388,6 @@
      /* Style bearbit actions button */
      .bb-actions {
         margin-top: 3px;
-        margin-bottom: 3px;
         display: flex;
         gap: 6px;
         align-items: center;
@@ -378,9 +457,38 @@
         background: #666;
         border-radius: 4px;
     }
+
+    .filter-container {
+        padding-top: 3px;
+        padding-bottom: 3px;
+        top: 0px;
+        z-index: 101;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .filter-container a {
+        font-family: Tahoma, Arial, sans-serif;
+        font-size: 10px;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 16px;
+        padding: 5px 11px;
+        min-width: 80px;
+        line-height: 1.2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 3px;
+        border: 1px solid transparent;
+        box-shadow: rgba(15, 23, 42, 0.12) 0px 1px 4px;
+        color: #ffffff;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
 `);
-
-
 
     function createSettingsPanel() {
         // Remove existing panel if any
@@ -408,16 +516,31 @@
                     ซ่อนหมวดสีรุ้ง
                 </label>
                 <label class="bearbit-settings-label">
-                <input type="checkbox" class="bearbit-settings-checkbox" id="minimal" ${settings.MINIMAL ? 'checked' : ''}>
+                    <input type="checkbox" class="bearbit-settings-checkbox" id="minimal" ${settings.MINIMAL ? 'checked' : ''}>
                     Minimal details
+                    <span class="info-icon">
+                        ⓘ
+                        <span class="tooltip-text">
+                            <ul>
+                                <li>ซ่อนรายละเอียดชื่อไฟล์</li>
+                                <li>ลดขนาดรูปตัวอย่าง</li>
+                                <li>ซ่อนบางคอลัมม์</li>
+                                <li>ซ่อนตาราง Hot Torrents</li>
+                            </ul>
+                        </span>
+                    </span>
                 </label>
-            </div>
+                <label class="bearbit-settings-label">
+                    <input type="checkbox" class="bearbit-settings-checkbox" id="preview" ${settings.PREVIEW ? 'checked' : ''}>
+                    แสดงรูปตัวอย่างเมื่อแตะชื่อไฟล์
+                </label>
+         </div>
             <div class="bearbit-settings-group">
                 <label style="color: white !important;">ขนาดรูป:</label>
                 <select class="bearbit-settings-select" id="thumbnail-size-select">
-                    <option value="60px" ${settings.THUMBNAIL_SIZE === '60px' ? 'selected' : ''}>เล็ก</option>
-                    <option value="100px" ${settings.THUMBNAIL_SIZE === '100px' ? 'selected' : ''}>ปกติ</option>
-                    <option value="150px" ${settings.THUMBNAIL_SIZE === '150px' ? 'selected' : ''}>ใหญ่</option>
+                    <option value="${imageSize.small}" ${settings.THUMBNAIL_SIZE == imageSize.small ? 'selected' : ''}>เล็ก</option>
+                    <option value="${imageSize.normal}" ${settings.THUMBNAIL_SIZE == imageSize.normal ? 'selected' : ''}>ปกติ</option>
+                    <option value="${imageSize.large}" ${settings.THUMBNAIL_SIZE == imageSize.large ? 'selected' : ''}>ใหญ่</option>
                 </select>
             </div>
             <div class="bearbit-settings-buttons">
@@ -436,6 +559,18 @@
 
         document.body.appendChild(overlay);
         document.body.appendChild(panel);
+        document.getElementById('minimal').addEventListener('change', updateThumbnailSelectState);
+        updateThumbnailSelectState();
+    }
+
+    function updateThumbnailSelectState(){
+        const minimalCheckbox = document.getElementById('minimal');
+        const thumbnailSelect = document.getElementById('thumbnail-size-select');
+        const isMinimal = minimalCheckbox.checked;
+        thumbnailSelect.disabled = isMinimal;
+        thumbnailSelect.style.opacity = isMinimal ? '0.6' : '1';
+        thumbnailSelect.style.cursor = isMinimal ? 'not-allowed' : 'pointer';
+        thumbnailSelect.title = 'ปิดใช้งานในโหมด Minimal details';
     }
 
     function hideSettingsPanel() {
@@ -455,19 +590,21 @@
         const sizeSelect = document.getElementById('thumbnail-size-select');
         let thumbsize = 0;
         if(document.getElementById('minimal').checked){
-                thumbsize = '60px';
+                thumbsize = imageSize.small;
         }else{
                 thumbsize = sizeSelect.value;
         }
         const newSettings = {
             HIDE_GAY: document.getElementById('hide-gay').checked,
             MINIMAL: document.getElementById('minimal').checked,
+            PREVIEW: document.getElementById('preview').checked,
             THUMBNAIL_SIZE: thumbsize
         };
 
         // Save to storage
         GM_setValue('HIDE_GAY', newSettings.HIDE_GAY);
         GM_setValue('MINIMAL', newSettings.MINIMAL);
+        GM_setValue('PREVIEW', newSettings.PREVIEW);
         GM_setValue('THUMBNAIL_SIZE', newSettings.THUMBNAIL_SIZE);
         // Update current settings
         Object.assign(settings, newSettings);
@@ -481,6 +618,7 @@
         if (confirm('Reset all settings to defaults?')) {
             GM_setValue('HIDE_GAY', defaultSettings.HIDE_GAY);
             GM_setValue('MINIMAL', defaultSettings.MINIMAL);
+            GM_setValue('PREVIEW', defaultSettings.PREVIEW);
             GM_setValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE);
 
             Object.assign(settings, defaultSettings);
@@ -609,7 +747,6 @@
             const h = col.querySelector('a[href^="view"][href$=".php?sortby=1"]');
             if(h){
                 const row = h.closest('tr');
-                //col.style.width = '100%';
                 hideColumns(row);
             }
         }
@@ -666,6 +803,115 @@
         });
     }
 
+    function buildFilterButton(text, suffix, color){
+        const element = document.createElement('a');
+        element.style.cssText = `
+             display: inline-flex;
+             padding: 5px;
+             cursor: pointer;
+             border: 2px solid;
+             border-color: ${color};
+             color: black;
+             transition: all 0.2s ease;
+        `;
+        element.textContent = `${text}`;
+        element.className = `bb-filter ${suffix}`
+        element.dataset.color = `${color}`;
+        if (suffix === 'all') {
+            element.classList.add('active');
+            element.style.backgroundColor =`${color}`;
+            element.style.color = 'black';
+        }
+        element.addEventListener('click', (e) => {
+            e.preventDefault();
+            const currentActive = document.querySelector('.bb-filter.active');
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                currentActive.style.backgroundColor = 'transparent';
+                currentActive.style.color = 'black';
+            }
+            element.classList.add('active');
+            element.style.backgroundColor = element.dataset.color;
+
+            if(e.target.classList.contains('all')){
+                element.style.color = 'black';
+            }else{
+                element.style.color = 'white';
+            }
+
+            const btnDownloads = document.querySelectorAll('.bb-download');
+            btnDownloads.forEach(btn => {
+                const row = btn.closest('tr');
+                if(!row) return;
+                if (e.target.classList.contains('all')) {
+                    row.style.display = '';
+                }else{
+                    if (!btn.classList.contains(`${suffix}`)) {
+                        row.style.display = 'none';
+                    }else{
+                        row.style.display = '';
+                    }
+                }
+            });
+        });
+        return element
+    }
+
+    function filters(){
+        const filterStyle = [
+            {
+                text: 'ทั้งหมด',
+                suffix: 'all',
+                color: '#CBD5E1'
+            },{
+                text: 'น้อยกว่า 4 GB',
+                suffix: 'small',
+                color: '#16A34A'
+            },{
+                text: '4 - 10 GB',
+                suffix: 'medium',
+                color: '#2563EB'
+            },{
+                text: '10 - 30 GB',
+                suffix: 'large',
+                color: '#EA580C'
+            },{
+                text: '30 GB ขึ้นไป',
+                suffix: 'xlarge',
+                color: '#DC2626'
+            }
+        ];
+
+        const toggle_posters = document.getElementById('toggle-posters-btn');
+        const parentDiv = toggle_posters.parentElement;
+        parentDiv.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding-right: 5px;
+        `;
+
+        const centerWrapper = document.createElement('div');
+        centerWrapper.className = 'filter-container';
+        centerWrapper.style.cssText = `
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex: 1;
+        `;
+
+        filterStyle.forEach(style => {
+            let elem = buildFilterButton(style.text, style.suffix, style.color);
+            centerWrapper.appendChild(elem);
+        });
+        parentDiv.insertBefore(centerWrapper, toggle_posters);
+        const rightWrapper = document.createElement('div');
+        rightWrapper.style.cssText = 'text-align: right;';
+        parentDiv.insertBefore(rightWrapper, toggle_posters);
+        rightWrapper.appendChild(toggle_posters);
+    }
+
     function actionsButton() {
         cleanupButtons();
         const posterRows = document.querySelectorAll('tr td[class="poster-column"]');
@@ -702,7 +948,6 @@
                 }
             }
 
-            //row.querySelector(`${vipDivClass}`)?.style.setProperty('display', 'none');
             hideDiv(row);
             row.querySelector('img[src="pic/cams.gif "]')?.style.setProperty('display', 'none');
             const originalBookmark = row.querySelector(`${bookmarkClass}`);
@@ -721,7 +966,6 @@
             btnDownload.textContent = `📥 ดาวน์โหลด (${fileSize})`;
             btnDownload.style.color = '#ffffff';
             btnDownload.style.cursor = 'pointer';
-            btnDownload.className = 'bb-download';
             btnDownload.title = 'คลิกเพื่อดาวน์โหลด';
 
             const btnImage = document.createElement('a');
@@ -752,25 +996,31 @@
 
 
             // Set background color based on file size (in GB)
-            let bgColor;
+            let bgColor, suffixClass;
             if (numericSize < 4) {
                 bgColor = '#16A34A'; // Green
+                suffixClass = 'small';
             } else if (numericSize >= 4 && numericSize <= 10 ) {
                 bgColor = '#2563EB'; // blue
+                suffixClass = 'medium';
             } else if (numericSize > 10 && numericSize <= 30) {
                 bgColor = '#EA580C'; // Orange
+                suffixClass = 'large';
             } else if (numericSize > 30) {
                 bgColor = '#DC2626'; // Red
+                suffixClass = 'xlarge';
             } else {
-                bgColor = '#16A34A'; // Grey (for unknown size)
+                bgColor = '#16A34A'; // Green (for unknown size)
+                suffixClass = 'small';
             }
 
             btnDownload.style.backgroundColor = bgColor;
+            btnDownload.className = `bb-download ${suffixClass}`;
             divGroup.appendChild(btnImage);
             divGroup.appendChild(btnDownload);
             divGroup.appendChild(btnBookmark);
             nameCell.appendChild(divGroup);
-
+            
             removeUploaderAvartar(row);
             cleanWhitespace(row);
 
@@ -927,6 +1177,9 @@
     }
 
     function setupHoverDetection() {
+        if(!settings.PREVIEW){
+            return;
+        }
         const allDetailsLinks = document.querySelectorAll('a[href^="details.php"]');
 
         allDetailsLinks.forEach(link => {
@@ -978,7 +1231,7 @@
             hidePreview();
             isHovering = false;
             currentLink = null;
-        }, 100);
+        }, 30);
     }
 
     function createPreviewContainer() {
@@ -1023,10 +1276,6 @@
 
         const img = previewContainer.querySelector('img');
 
-        // Clear previous error message
-        const oldError = previewContainer.querySelector('.error-msg');
-        if (oldError) oldError.remove();
-
         img.src = '';
         img.alt = 'Loading...';
         img.style.opacity = '0.5';
@@ -1044,17 +1293,9 @@
         };
 
         testImg.onerror = function() {
-            console.error('Failed to load image:', imageUrl);
             img.alt = 'Failed to load image';
             img.style.opacity = '1';
-
-            const errorDiv = document.createElement('div');
-            errorDiv.style.color = 'white';
-            errorDiv.style.padding = '20px';
-            errorDiv.style.textAlign = 'center';
-            errorDiv.innerText = 'Failed to load image';
-            errorDiv.className = 'error-msg';
-            previewContainer.appendChild(errorDiv);
+            img.src = noimage;
         };
 
         testImg.src = imageUrl;
@@ -1069,8 +1310,6 @@
                 img.src = '';
                 img.style.opacity = '1';
             }
-            const errorDiv = previewContainer.querySelector('.error-msg');
-            if (errorDiv) errorDiv.remove();
         }
     }
 
@@ -1106,6 +1345,7 @@
     function init() {
         actionsButton();
         minimalDetails();
+        filters();
         autoThank();
         hideGayContents();
         createSettingsButton();
@@ -1116,5 +1356,11 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
+        if(settings.THUMBNAIL_SIZE == imageSize.large){
+            const posters = document.querySelectorAll('.poster-column img');
+            posters.forEach(image => {
+                image.style.setProperty('width', '140px','important');
+            });
+        }
     }
 })();
