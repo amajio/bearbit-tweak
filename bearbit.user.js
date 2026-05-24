@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.24.0318
+// @version      26.5.24.0903
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -25,9 +25,8 @@
     let _glightbox = null;
     const noimage = 'https://bearbit.org/no_poster.jpg';
     const imageSize = {
-        'small': 75,
-        'normal': 140,
-        'large': 180,
+        'width':{'small': 75,'normal': 100, 'large': 140},
+        'height':{'small': 75,'normal': 140, 'large': 180},
     };
 
     // Load GLightbox into the page context (bypasses userscript sandbox proxy issues)
@@ -538,9 +537,9 @@
             <div class="bearbit-settings-group">
                 <label style="color: white !important;">ขนาดรูป:</label>
                 <select class="bearbit-settings-select" id="thumbnail-size-select">
-                    <option value="${imageSize.small}" ${settings.THUMBNAIL_SIZE == imageSize.small ? 'selected' : ''}>เล็ก</option>
-                    <option value="${imageSize.normal}" ${settings.THUMBNAIL_SIZE == imageSize.normal ? 'selected' : ''}>ปกติ</option>
-                    <option value="${imageSize.large}" ${settings.THUMBNAIL_SIZE == imageSize.large ? 'selected' : ''}>ใหญ่</option>
+                    <option value="${imageSize.height.small}" ${settings.THUMBNAIL_SIZE == imageSize.height.small ? 'selected' : ''}>เล็ก</option>
+                    <option value="${imageSize.height.normal}" ${settings.THUMBNAIL_SIZE == imageSize.height.normal ? 'selected' : ''}>ปกติ</option>
+                    <option value="${imageSize.height.large}" ${settings.THUMBNAIL_SIZE == imageSize.height.large ? 'selected' : ''}>ใหญ่</option>
                 </select>
             </div>
             <div class="bearbit-settings-buttons">
@@ -590,7 +589,7 @@
         const sizeSelect = document.getElementById('thumbnail-size-select');
         let thumbsize = 0;
         if(document.getElementById('minimal').checked){
-                thumbsize = imageSize.small;
+                thumbsize = imageSize.height.small;
         }else{
                 thumbsize = sizeSelect.value;
         }
@@ -638,6 +637,19 @@
             createSettingsPanel();
         };
         document.body.appendChild(button);
+        const posters = document.querySelectorAll('.poster-column img');
+        let matchedSize = null;
+        Object.entries(imageSize.height).forEach(([size, value]) => {
+            if(settings.THUMBNAIL_SIZE == value) {
+                matchedSize = size;
+            }
+        });
+
+        if(matchedSize) {
+            posters.forEach(image => {
+                image.style.setProperty('width', imageSize.width[matchedSize] + 'px', 'important');
+            });
+        }
     }
 
     function cleanupButtons() {
@@ -1356,11 +1368,5 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
-        if(settings.THUMBNAIL_SIZE == imageSize.large){
-            const posters = document.querySelectorAll('.poster-column img');
-            posters.forEach(image => {
-                image.style.setProperty('width', '140px','important');
-            });
-        }
     }
 })();
