@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.24.0903
+// @version      26.5.24.1915
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -822,6 +822,7 @@
              border-color: ${color};
              color: black;
              transition: all 0.2s ease;
+             background: white;
         `;
         element.textContent = `${text}`;
         element.className = `bb-filter ${suffix}`
@@ -836,7 +837,7 @@
             const currentActive = document.querySelector('.bb-filter.active');
             if (currentActive) {
                 currentActive.classList.remove('active');
-                currentActive.style.backgroundColor = 'transparent';
+                currentActive.style.backgroundColor = 'white';
                 currentActive.style.color = 'black';
             }
             element.classList.add('active');
@@ -861,6 +862,36 @@
                         row.style.display = '';
                     }
                 }
+            });
+
+            const headers = document.querySelectorAll('.colhead.poster-column');
+            let counter=0;
+            headers.forEach((head, tindex )=> {
+                const empty = document.getElementById(`empty-table-${tindex}`);
+                if(empty){
+                    empty.remove();
+                }
+                const table = head.closest('table');
+                const rows = table.querySelectorAll('tr');
+                rows.forEach((row, rindex) =>{
+                    if(rindex == 0) return; //skip header
+                    if(row.style.display != 'none') return;
+                    counter++;
+                });
+
+                if((rows.length-1)-counter == 0){
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    tr.id = `empty-table-${tindex}`;
+                    tr.style.height = '60px';
+                    td.colSpan = 13;
+                    td.textContent = 'ไม่พบไฟล์';
+                    td.style.textAlign = 'center';
+                    td.style.verticalAlign = 'middle';
+                    tr.appendChild(td);
+                    table.appendChild(tr);
+                }
+                counter=0
             });
         });
         return element
@@ -967,7 +998,6 @@
             const filename_div = document.createElement('div');
             filename_div.className = 'hover-area';
             filename_div.style.display = 'inline-block';
-            filename_div.style.padding = '5px';
             link.parentNode.insertBefore(filename_div, link);
             filename_div.appendChild(link);
 
