@@ -155,11 +155,8 @@
       }
 
       .poster-column img {
-         /*width: ${settings.THUMBNAIL_SIZE}px !important;*/
          height: ${settings.THUMBNAIL_SIZE}px !important;
-         /*max-height: calc(${settings.THUMBNAIL_SIZE}px * 1.3) !important;*/
          max-height: ${settings.THUMBNAIL_SIZE}px !important;
-         /*object-fit: contain !important;*/
          border: 0px !important;
       }
 
