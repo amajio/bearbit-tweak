@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.25.1147
+// @version      26.5.26.0403
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -524,7 +524,7 @@
                         ⓘ
                         <span class="tooltip-text">
                             <ul>
-                                <li>ซ่อนรายละเอียดชื่อไฟล์</li>
+                                <li>ซ่อนรายละเอียดด้านล่างชื่อไฟล์</li>
                                 <li>ลดขนาดรูปตัวอย่าง</li>
                                 <li>ซ่อนบางคอลัมม์</li>
                             </ul>
@@ -669,33 +669,22 @@
 
     function hideHotTorrentSection() {
         if(!settings.HIDE_STICKY) return;
-        const firstH2 = document.querySelector('h2');
-        const hr = document.querySelector('hr');
+        const h2 = document.querySelector('h2 img[alt="Hot"]')?.closest('h2');
+        const hr = [...document.querySelectorAll('h2')].find(el => el.textContent.includes('รายการไฟล์'))?.previousElementSibling;
+        const elementsToHide = [];
 
-        if (firstH2 && hr) {
-            let current = firstH2.nextSibling;
-            const elementsToRemove = [];
+        if (h2 && hr) {
+            let current = h2.nextSibling;
 
-            // Collect elements to remove (skip style and script tags)
             while (current && current !== hr) {
                 if (current.nodeType === Node.ELEMENT_NODE) {
-                    // Keep style and script tags, remove everything else
-                    if (current.tagName !== 'STYLE' && current.tagName !== 'SCRIPT') {
-                        elementsToRemove.push(current);
-                    }
-                } else if (current.nodeType === Node.TEXT_NODE && current.textContent.trim() !== '') {
-                    // Remove non-empty text nodes
-                    elementsToRemove.push(current);
+                    elementsToHide.push(current);
                 }
                 current = current.nextSibling;
             }
-
-            // Remove the collected elements
-            elementsToRemove.forEach(element => {element.style.display = 'none';});
-
-            // Remove the hr itself
-            hr.style.display = 'none';
-            firstH2.style.display = 'none';
+            elementsToHide.push(hr);
+            elementsToHide.push(h2);
+            elementsToHide.forEach(element => {element.style.display = 'none';});
         }
     }
 
