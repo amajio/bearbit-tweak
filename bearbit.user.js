@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.24.1915
+// @version      26.5.25.1147
 // @description  BearBit Tweak
 // @author       You
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -110,6 +110,7 @@
     // Default settings
     const defaultSettings = {
         HIDE_GAY: true,
+        HIDE_STICKY: true,
         MINIMAL: false,
         PREVIEW: false,
         THUMBNAIL_SIZE: 140
@@ -118,6 +119,7 @@
     // Load settings from storage or use defaults
     const settings = {
         HIDE_GAY: GM_getValue('HIDE_GAY', defaultSettings.HIDE_GAY),
+        HIDE_STICKY: GM_getValue('HIDE_STICKY', defaultSettings.HIDE_STICKY),
         MINIMAL: GM_getValue('MINIMAL', defaultSettings.MINIMAL),
         PREVIEW: GM_getValue('PREVIEW', defaultSettings.PREVIEW),
         THUMBNAIL_SIZE: GM_getValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE)
@@ -512,6 +514,10 @@
                     ซ่อนหมวดสีรุ้ง
                 </label>
                 <label class="bearbit-settings-label">
+                    <input type="checkbox" class="bearbit-settings-checkbox" id="hide-sticky" ${settings.HIDE_STICKY ? 'checked' : ''}>
+                    ซ่อน Hot Torrents (Sticky)
+                </label>
+                <label class="bearbit-settings-label">
                     <input type="checkbox" class="bearbit-settings-checkbox" id="minimal" ${settings.MINIMAL ? 'checked' : ''}>
                     Minimal details
                     <span class="info-icon">
@@ -521,7 +527,6 @@
                                 <li>ซ่อนรายละเอียดชื่อไฟล์</li>
                                 <li>ลดขนาดรูปตัวอย่าง</li>
                                 <li>ซ่อนบางคอลัมม์</li>
-                                <li>ซ่อนตาราง Hot Torrents</li>
                             </ul>
                         </span>
                     </span>
@@ -592,6 +597,7 @@
         }
         const newSettings = {
             HIDE_GAY: document.getElementById('hide-gay').checked,
+            HIDE_STICKY: document.getElementById('hide-sticky').checked,
             MINIMAL: document.getElementById('minimal').checked,
             PREVIEW: document.getElementById('preview').checked,
             THUMBNAIL_SIZE: thumbsize
@@ -599,6 +605,7 @@
 
         // Save to storage
         GM_setValue('HIDE_GAY', newSettings.HIDE_GAY);
+        GM_setValue('HIDE_STICKY', newSettings.HIDE_STICKY);
         GM_setValue('MINIMAL', newSettings.MINIMAL);
         GM_setValue('PREVIEW', newSettings.PREVIEW);
         GM_setValue('THUMBNAIL_SIZE', newSettings.THUMBNAIL_SIZE);
@@ -613,6 +620,7 @@
     function resetSettings() {
         if (confirm('Reset all settings to defaults?')) {
             GM_setValue('HIDE_GAY', defaultSettings.HIDE_GAY);
+            GM_setValue('HIDE_STICKY', defaultSettings.HIDE_STICKY);
             GM_setValue('MINIMAL', defaultSettings.MINIMAL);
             GM_setValue('PREVIEW', defaultSettings.PREVIEW);
             GM_setValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE);
@@ -659,34 +667,22 @@
         });
     }
 
-    function removeHotTorrentSection() {
-        const firstH2 = document.querySelector('h2');
-        const hr = document.querySelector('hr');
-
-        if (firstH2 && hr) {
-            let current = firstH2.nextSibling;
-            const elementsToRemove = [];
-
-            // Collect elements to remove (skip style and script tags)
-            while (current && current !== hr) {
-                if (current.nodeType === Node.ELEMENT_NODE) {
-                    // Keep style and script tags, remove everything else
-                    if (current.tagName !== 'STYLE' && current.tagName !== 'SCRIPT') {
-                        elementsToRemove.push(current);
-                    }
-                } else if (current.nodeType === Node.TEXT_NODE && current.textContent.trim() !== '') {
-                    // Remove non-empty text nodes
-                    elementsToRemove.push(current);
-                }
-                current = current.nextSibling;
+    function hideHotTorrentSection() {
+        if(!settings.HIDE_STICKY) return;
+        const headers = document.querySelectorAll('.colhead.poster-column');
+        const sticky = document.getElementById('sticky-torrents-container');
+        if(headers.length > 1){
+            const table = headers[0].closest('table');
+            let hr = sticky.nextElementSibling;
+            if (hr && hr.tagName === 'HR') {
+                hr.style.display = 'none';
+                sticky.style.display = 'none';
             }
-
-            // Remove the collected elements
-            elementsToRemove.forEach(element => {element.style.display = 'none';});
-
-            // Remove the hr itself
-            hr.style.display = 'none';
-            firstH2.style.display = 'none';
+            let h2 = table.previousElementSibling;
+            if (h2 && h2.tagName === 'H2') {
+                h2.style.display = 'none';
+                table.style.display = 'none';
+            }
         }
     }
 
@@ -698,14 +694,14 @@
         });
     }
 
-    function removeUploaderAvartar(row){
+    function hideUploaderAvartar(row){
         const uploader = row.querySelector('td:nth-child(13)');
         if (uploader) {
             // Remove img elements
-            uploader.querySelectorAll('img').forEach(img => img.remove());
+            uploader.querySelectorAll('img').forEach(img => {img.style.display = 'none';});
 
             // Remove other image types
-            uploader.querySelectorAll('picture, svg, [role="img"]').forEach(el => el.remove());
+            uploader.querySelectorAll('picture, svg, [role="img"]').forEach(el => {el.style.display = 'none';});
 
             // Clear background images
             uploader.querySelectorAll('*').forEach(el => {
@@ -718,7 +714,7 @@
 
     function minimalDetails(){
         if(!settings.MINIMAL) return;
-        removeHotTorrentSection();
+        hideHotTorrentSection();
         const posterRows = document.querySelectorAll('tr td[class="poster-column"]');
         posterRows.forEach(posterTd => {
             const row = posterTd.closest('tr');
@@ -739,14 +735,12 @@
                         current = nextNode;
                     }
                 } else {
-                    // Fallback: just remove until the start of the div area
                     let elem = br;
                     while (elem && elem.nextSibling && elem.nextSibling.tagName !== 'DIV') {
                         elem = elem.nextSibling;
                         elem.remove();
                     }
                     if (elem && elem.nextSibling && elem.nextSibling.tagName === 'DIV') {
-                        // Everything is removed already, br is gone too
                     }
                 }
             }
@@ -762,15 +756,13 @@
     }
 
     function cleanWhitespace(row) {
-        // Walk through ALL text nodes in the entire row
         const textNodes = [];
         const walker = document.createTreeWalker(
-            row, // Start from the row element itself
+            row,
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: function(node) {
                     const text = node.textContent;
-                    // Accept if it's empty, only whitespace, or the word "whitespace"
                     if(text.trim() === '' || text.trim() === 'whitespace') {
                         return NodeFilter.FILTER_ACCEPT;
                     }
@@ -779,26 +771,21 @@
             }
         );
 
-        // Collect all whitespace text nodes
         while(walker.nextNode()) {
             textNodes.push(walker.currentNode);
         }
 
-        // Remove all collected text nodes
         textNodes.forEach(node => {
             if(node.parentNode) {
                 node.parentNode.removeChild(node);
             }
         });
 
-        // Also remove any empty divs that contain ONLY whitespace
         const emptyDivs = row.querySelectorAll('div');
         emptyDivs.forEach(div => {
-            // Check if div has no children elements and only whitespace text
             if(div.children.length === 0 && div.textContent.trim() === '') {
                 div.remove();
             }
-            // Remove div that literally says "whitespace"
             else if(div.children.length === 0 && div.textContent.trim() === 'whitespace') {
                 div.remove();
             }
@@ -1059,8 +1046,8 @@
             divGroup.appendChild(btnDownload);
             divGroup.appendChild(btnBookmark);
             nameCell.appendChild(divGroup);
-            
-            removeUploaderAvartar(row);
+
+           hideUploaderAvartar(row);
             cleanWhitespace(row);
 
             if (!btnDownload || btnDownload.dataset.processed === 'true') return;
