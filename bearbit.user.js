@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      26.5.25.1147
 // @description  BearBit Tweak
-// @author       You
+// @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
 // @match       https://bearbit.org/viewbrsb.php*
 // @match       https://bearbit.org/details.php*
@@ -669,20 +669,33 @@
 
     function hideHotTorrentSection() {
         if(!settings.HIDE_STICKY) return;
-        const headers = document.querySelectorAll('.colhead.poster-column');
-        const sticky = document.getElementById('sticky-torrents-container');
-        if(headers.length > 1){
-            const table = headers[0].closest('table');
-            let hr = sticky.nextElementSibling;
-            if (hr && hr.tagName === 'HR') {
-                hr.style.display = 'none';
-                sticky.style.display = 'none';
+        const firstH2 = document.querySelector('h2');
+        const hr = document.querySelector('hr');
+
+        if (firstH2 && hr) {
+            let current = firstH2.nextSibling;
+            const elementsToRemove = [];
+
+            // Collect elements to remove (skip style and script tags)
+            while (current && current !== hr) {
+                if (current.nodeType === Node.ELEMENT_NODE) {
+                    // Keep style and script tags, remove everything else
+                    if (current.tagName !== 'STYLE' && current.tagName !== 'SCRIPT') {
+                        elementsToRemove.push(current);
+                    }
+                } else if (current.nodeType === Node.TEXT_NODE && current.textContent.trim() !== '') {
+                    // Remove non-empty text nodes
+                    elementsToRemove.push(current);
+                }
+                current = current.nextSibling;
             }
-            let h2 = table.previousElementSibling;
-            if (h2 && h2.tagName === 'H2') {
-                h2.style.display = 'none';
-                table.style.display = 'none';
-            }
+
+            // Remove the collected elements
+            elementsToRemove.forEach(element => {element.style.display = 'none';});
+
+            // Remove the hr itself
+            hr.style.display = 'none';
+            firstH2.style.display = 'none';
         }
     }
 
@@ -714,7 +727,6 @@
 
     function minimalDetails(){
         if(!settings.MINIMAL) return;
-        hideHotTorrentSection();
         const posterRows = document.querySelectorAll('tr td[class="poster-column"]');
         posterRows.forEach(posterTd => {
             const row = posterTd.closest('tr');
@@ -1370,6 +1382,7 @@
 
     function init() {
         actionsButton();
+        hideHotTorrentSection()
         minimalDetails();
         filters();
         autoThank();
