@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.26.1332
+// @version      26.5.26.2352
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -512,10 +512,6 @@
                     ซ่อนหมวดสีรุ้ง
                 </label>
                 <label class="bearbit-settings-label">
-                    <input type="checkbox" class="bearbit-settings-checkbox" id="hide-sticky" ${settings.HIDE_STICKY ? 'checked' : ''}>
-                    ซ่อน Hot Torrents (Sticky)
-                </label>
-                <label class="bearbit-settings-label">
                     <input type="checkbox" class="bearbit-settings-checkbox" id="minimal" ${settings.MINIMAL ? 'checked' : ''}>
                     Minimal details
                     <span class="info-icon">
@@ -595,7 +591,6 @@
         }
         const newSettings = {
             HIDE_GAY: document.getElementById('hide-gay').checked,
-            HIDE_STICKY: document.getElementById('hide-sticky').checked,
             MINIMAL: document.getElementById('minimal').checked,
             PREVIEW: document.getElementById('preview').checked,
             THUMBNAIL_SIZE: thumbsize
@@ -603,7 +598,6 @@
 
         // Save to storage
         GM_setValue('HIDE_GAY', newSettings.HIDE_GAY);
-        GM_setValue('HIDE_STICKY', newSettings.HIDE_STICKY);
         GM_setValue('MINIMAL', newSettings.MINIMAL);
         GM_setValue('PREVIEW', newSettings.PREVIEW);
         GM_setValue('THUMBNAIL_SIZE', newSettings.THUMBNAIL_SIZE);
@@ -666,7 +660,6 @@
     }
 
     function hideHotTorrentSection() {
-        if(!settings.HIDE_STICKY) return;
         const h2 = document.querySelector('h2 img[alt="Hot"]')?.closest('h2');
         const hr = [...document.querySelectorAll('h2')].find(el => el.textContent.includes('รายการไฟล์'))?.previousElementSibling;
         const elementsToHide = [];
@@ -682,7 +675,13 @@
             }
             elementsToHide.push(hr);
             elementsToHide.push(h2);
-            elementsToHide.forEach(element => {element.style.display = 'none';});
+            elementsToHide.forEach(element => {
+                if(!settings.HIDE_STICKY){
+                    element.style.display = '';
+                }else{
+                    element.style.display = 'none';
+                }
+            });
         }
     }
 
@@ -904,6 +903,28 @@
         ];
 
         const toggle_posters = document.getElementById('toggle-posters-btn');
+        const hideHotTorrent = document.createElement('button');
+        let content = settings.HIDE_STICKY ? 'แสดง Hot Torrents':'ซ่อน Hot Torrents';
+        hideHotTorrent.textContent = content;
+        hideHotTorrent.style.cssText = `
+            font-size: 11px;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-right: 10px;
+        `;
+
+        hideHotTorrent.addEventListener('click', (e) => {
+            settings.HIDE_STICKY = !settings.HIDE_STICKY
+            GM_setValue('HIDE_STICKY', settings.HIDE_STICKY);
+            let content = settings.HIDE_STICKY ? 'แสดง Hot Torrents':'ซ่อน Hot Torrents';
+            if(settings.HIDE_STICKY){
+                hideHotTorrent.textContent = content;
+            }else{
+                hideHotTorrent.textContent = content;
+            }
+            hideHotTorrentSection();
+        });
+
         const parentDiv = toggle_posters.parentElement;
         parentDiv.style.cssText = `
             display: flex;
@@ -927,6 +948,7 @@
             centerWrapper.appendChild(elem);
         });
         parentDiv.insertBefore(centerWrapper, toggle_posters);
+        parentDiv.insertBefore(hideHotTorrent, toggle_posters);
         const rightWrapper = document.createElement('div');
         rightWrapper.style.cssText = 'text-align: right;';
         parentDiv.insertBefore(rightWrapper, toggle_posters);
