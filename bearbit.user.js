@@ -7,8 +7,6 @@
 // @match       https://bearbit.org/viewno18sbx.php*
 // @match       https://bearbit.org/viewbrsb.php*
 // @match       https://bearbit.org/details.php*
-// @match       https://bearbit.org/index.php*
-// @match       https://bearbit.org
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
