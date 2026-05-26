@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.26.0403
+// @version      26.5.26.1332
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -698,19 +698,14 @@
 
     function hideUploaderAvartar(row){
         const uploader = row.querySelector('td:nth-child(13)');
+        uploader.style.width = 'auto';
         if (uploader) {
-            // Remove img elements
-            uploader.querySelectorAll('img').forEach(img => {img.style.display = 'none';});
-
-            // Remove other image types
-            uploader.querySelectorAll('picture, svg, [role="img"]').forEach(el => {el.style.display = 'none';});
-
-            // Clear background images
-            uploader.querySelectorAll('*').forEach(el => {
-                if (window.getComputedStyle(el).backgroundImage !== 'none') {
-                    el.style.backgroundImage = 'none';
+            const children = uploader.children;
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].tagName !== 'A') {
+                    children[i].style.display = 'none';
                 }
-            });
+            }
         }
     }
 
@@ -1020,7 +1015,9 @@
             btnBookmark.className = 'bb-bookmark';
             btnBookmark.style.cursor = 'pointer';
             btnBookmark.title = 'เพิ่ม/ลบ ออกจากบุ๊กมาร์ก';
-
+            if (originalBookmark.classList.contains('bookmarked')) {
+                btnBookmark.classList.add('bookmarked');
+            }
 
             // Set background color based on file size (in GB)
             let bgColor, suffixClass;
@@ -1056,7 +1053,6 @@
             const targetUrl = `${baseUrl}${link.getAttribute('href')}`;
             btnDownload.dataset.targetUrl = targetUrl;
             btnDownload.dataset.processed = 'true';
-
             btnDownload.removeEventListener('click', btnDownload.clickHandler);
 
             btnBookmark.addEventListener('click', () => {
