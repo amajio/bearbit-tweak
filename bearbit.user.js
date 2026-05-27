@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.26.2352
+// @version      26.5.27.1121
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -903,6 +903,7 @@
         ];
 
         const toggle_posters = document.getElementById('toggle-posters-btn');
+        if(!toggle_posters) return;
         const hideHotTorrent = document.createElement('button');
         let content = settings.HIDE_STICKY ? 'แสดง Hot Torrents':'ซ่อน Hot Torrents';
         hideHotTorrent.textContent = content;
