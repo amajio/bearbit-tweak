@@ -489,10 +489,8 @@
     function createSettingsPanel() {
         // Remove existing panel if any
         const existingPanel = document.getElementById('bearbit-settings-panel');
-        if (existingPanel) {
-            existingPanel.remove();
-        }
-
+        if (existingPanel) return;
+		
         const overlay = document.createElement('div');
         overlay.className = 'bearbit-settings-overlay';
         overlay.onclick = hideSettingsPanel;
