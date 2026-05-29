@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    http://tampermonkey.net/
-// @version      26.5.27.1121
+// @version      26.5.29.1655
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -23,8 +23,8 @@
     let _glightbox = null;
     const noimage = 'https://bearbit.org/no_poster.jpg';
     const imageSize = {
-        'width':{'small': 75,'normal': 100, 'large': 140},
-        'height':{'small': 75,'normal': 140, 'large': 180},
+        'width':{'minimal':50, 'small': 75, 'normal': 100, 'large': 140},
+        'height':{'minimal':50, 'small': 75,'normal': 140, 'large': 180},
     };
 
     // Load GLightbox into the page context (bypasses userscript sandbox proxy issues)
@@ -108,8 +108,8 @@
     // Default settings
     const defaultSettings = {
         HIDE_GAY: true,
+        HIDE_DESC:false,
         HIDE_STICKY: true,
-        MINIMAL: false,
         PREVIEW: false,
         THUMBNAIL_SIZE: 140
     };
@@ -118,7 +118,7 @@
     const settings = {
         HIDE_GAY: GM_getValue('HIDE_GAY', defaultSettings.HIDE_GAY),
         HIDE_STICKY: GM_getValue('HIDE_STICKY', defaultSettings.HIDE_STICKY),
-        MINIMAL: GM_getValue('MINIMAL', defaultSettings.MINIMAL),
+        HIDE_DESC: GM_getValue('HIDE_DESC', defaultSettings.HIDE_DESC),
         PREVIEW: GM_getValue('PREVIEW', defaultSettings.PREVIEW),
         THUMBNAIL_SIZE: GM_getValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE)
     };
@@ -151,7 +151,7 @@
       }
 
       .poster-column {
-         width: auto !important;
+         width: 5% !important;
       }
 
       .poster-column img {
@@ -487,10 +487,9 @@
 `);
 
     function createSettingsPanel() {
-        // Remove existing panel if any
         const existingPanel = document.getElementById('bearbit-settings-panel');
         if (existingPanel) return;
-		
+
         const overlay = document.createElement('div');
         overlay.className = 'bearbit-settings-overlay';
         overlay.onclick = hideSettingsPanel;
@@ -510,18 +509,8 @@
                     ซ่อนหมวดสีรุ้ง
                 </label>
                 <label class="bearbit-settings-label">
-                    <input type="checkbox" class="bearbit-settings-checkbox" id="minimal" ${settings.MINIMAL ? 'checked' : ''}>
-                    Minimal details
-                    <span class="info-icon">
-                        ⓘ
-                        <span class="tooltip-text">
-                            <ul>
-                                <li>ซ่อนรายละเอียดด้านล่างชื่อไฟล์</li>
-                                <li>ลดขนาดรูปตัวอย่าง</li>
-                                <li>ซ่อนบางคอลัมม์</li>
-                            </ul>
-                        </span>
-                    </span>
+                    <input type="checkbox" class="bearbit-settings-checkbox" id="hide-desc" ${settings.HIDE_DESC ? 'checked' : ''}>
+                    ซ่อนคำอธิบายใต้ชื่อไฟล์
                 </label>
                 <label class="bearbit-settings-label">
                     <input type="checkbox" class="bearbit-settings-checkbox" id="preview" ${settings.PREVIEW ? 'checked' : ''}>
@@ -531,6 +520,7 @@
             <div class="bearbit-settings-group">
                 <label style="color: white !important;">ขนาดรูป:</label>
                 <select class="bearbit-settings-select" id="thumbnail-size-select">
+                    <option value="${imageSize.height.minimal}" ${settings.THUMBNAIL_SIZE == imageSize.height.minimal ? 'selected' : ''}>เล็กมาก</option>
                     <option value="${imageSize.height.small}" ${settings.THUMBNAIL_SIZE == imageSize.height.small ? 'selected' : ''}>เล็ก</option>
                     <option value="${imageSize.height.normal}" ${settings.THUMBNAIL_SIZE == imageSize.height.normal ? 'selected' : ''}>ปกติ</option>
                     <option value="${imageSize.height.large}" ${settings.THUMBNAIL_SIZE == imageSize.height.large ? 'selected' : ''}>ใหญ่</option>
@@ -552,18 +542,6 @@
 
         document.body.appendChild(overlay);
         document.body.appendChild(panel);
-        document.getElementById('minimal').addEventListener('change', updateThumbnailSelectState);
-        updateThumbnailSelectState();
-    }
-
-    function updateThumbnailSelectState(){
-        const minimalCheckbox = document.getElementById('minimal');
-        const thumbnailSelect = document.getElementById('thumbnail-size-select');
-        const isMinimal = minimalCheckbox.checked;
-        thumbnailSelect.disabled = isMinimal;
-        thumbnailSelect.style.opacity = isMinimal ? '0.6' : '1';
-        thumbnailSelect.style.cursor = isMinimal ? 'not-allowed' : 'pointer';
-        thumbnailSelect.title = 'ปิดใช้งานในโหมด Minimal details';
     }
 
     function hideSettingsPanel() {
@@ -581,22 +559,16 @@
 
     function saveSettings() {
         const sizeSelect = document.getElementById('thumbnail-size-select');
-        let thumbsize = 0;
-        if(document.getElementById('minimal').checked){
-                thumbsize = imageSize.height.small;
-        }else{
-                thumbsize = sizeSelect.value;
-        }
         const newSettings = {
             HIDE_GAY: document.getElementById('hide-gay').checked,
-            MINIMAL: document.getElementById('minimal').checked,
+            HIDE_DESC: document.getElementById('hide-desc').checked,
             PREVIEW: document.getElementById('preview').checked,
-            THUMBNAIL_SIZE: thumbsize
+            THUMBNAIL_SIZE: sizeSelect.value,
         };
 
         // Save to storage
         GM_setValue('HIDE_GAY', newSettings.HIDE_GAY);
-        GM_setValue('MINIMAL', newSettings.MINIMAL);
+        GM_setValue('HIDE_DESC', newSettings.HIDE_DESC);
         GM_setValue('PREVIEW', newSettings.PREVIEW);
         GM_setValue('THUMBNAIL_SIZE', newSettings.THUMBNAIL_SIZE);
         // Update current settings
@@ -611,7 +583,7 @@
         if (confirm('Reset all settings to defaults?')) {
             GM_setValue('HIDE_GAY', defaultSettings.HIDE_GAY);
             GM_setValue('HIDE_STICKY', defaultSettings.HIDE_STICKY);
-            GM_setValue('MINIMAL', defaultSettings.MINIMAL);
+            GM_setValue('HIDE_DESC', defaultSettings.HIDE_DESC);
             GM_setValue('PREVIEW', defaultSettings.PREVIEW);
             GM_setValue('THUMBNAIL_SIZE', defaultSettings.THUMBNAIL_SIZE);
 
@@ -683,18 +655,25 @@
         }
     }
 
-    function hideColumns(row){
-        const column_number = [13,10,7,6];
-        column_number.forEach(col => {
-            let el = row.querySelector(`td:nth-child(${col})`);
-            if (el) el.style.display = 'none';
+    function hideColumns(){
+        const column_number = [10,7,6]; // เสร็จ / ติชม / ไฟล์ //[13,12,11,10,9,8,7,6,5,4];
+        const headers = document.querySelectorAll('.colhead.poster-column');
+        headers.forEach(head => {
+            const table = head.closest('table');
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row=>{
+                column_number.forEach(col => {
+                    let el = row.querySelector(`td:nth-child(${col})`);
+                    if (el) el.style.display = 'none';
+                });
+            });
         });
     }
 
     function hideUploaderAvartar(row){
         const uploader = row.querySelector('td:nth-child(13)');
-        uploader.style.width = 'auto';
         if (uploader) {
+            uploader.style.width = 'auto';
             const children = uploader.children;
             for (let i = 0; i < children.length; i++) {
                 if (children[i].tagName !== 'A') {
@@ -704,13 +683,13 @@
         }
     }
 
-    function minimalDetails(){
-        if(!settings.MINIMAL) return;
-        const posterRows = document.querySelectorAll('tr td[class="poster-column"]');
-        posterRows.forEach(posterTd => {
-            const row = posterTd.closest('tr');
+    function hideDescription(){
+        if(!settings.HIDE_DESC) return;
+        const posters = document.querySelectorAll('.poster-column');
+        if(!posters) return;
+        posters.forEach(poster => {
+            const row = poster.closest('tr');
             if (!row) return;
-            hideColumns(row);
             const br = row.querySelector('br');
             if(br){
                 let nextDiv = br.nextElementSibling;
@@ -736,14 +715,6 @@
                 }
             }
         });
-        const headers = document.querySelectorAll('.colhead'); // hide header column
-        for (const col of headers) {
-            const h = col.querySelector('a[href^="view"][href$=".php?sortby=1"]');
-            if(h){
-                const row = h.closest('tr');
-                hideColumns(row);
-            }
-        }
     }
 
     function cleanWhitespace(row) {
@@ -1064,7 +1035,7 @@
             divGroup.appendChild(btnBookmark);
             nameCell.appendChild(divGroup);
 
-           hideUploaderAvartar(row);
+            hideUploaderAvartar(row);
             cleanWhitespace(row);
 
             if (!btnDownload || btnDownload.dataset.processed === 'true') return;
@@ -1387,10 +1358,11 @@
     function init() {
         actionsButton();
         hideHotTorrentSection()
-        minimalDetails();
         filters();
         autoThank();
         hideGayContents();
+        hideColumns();
+        hideDescription();
         createSettingsButton();
         setupHoverDetection();
     }
