@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
-// @namespace    http://tampermonkey.net/
-// @version      26.5.29.1655
+// @namespace    https://bearbit.org/
+// @version      26.6.20.0258
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -101,22 +101,18 @@
     let hideTimeout = null;
     let isHovering = false;
 
-    const previewClass = '.bb-preview';
-    const vipDivClass = '.bb-file-actions';
     const bookmarkClass = '.bookmark-btn';
 
     // Default settings
     const defaultSettings = {
-        HIDE_GAY: true,
         HIDE_DESC:false,
-        HIDE_STICKY: true,
+        HIDE_STICKY: false,
         PREVIEW: false,
         THUMBNAIL_SIZE: 140
     };
 
     // Load settings from storage or use defaults
     const settings = {
-        HIDE_GAY: GM_getValue('HIDE_GAY', defaultSettings.HIDE_GAY),
         HIDE_STICKY: GM_getValue('HIDE_STICKY', defaultSettings.HIDE_STICKY),
         HIDE_DESC: GM_getValue('HIDE_DESC', defaultSettings.HIDE_DESC),
         PREVIEW: GM_getValue('PREVIEW', defaultSettings.PREVIEW),
@@ -505,10 +501,6 @@
             </div>
             <div class="bearbit-settings-group">
                 <label class="bearbit-settings-label">
-                    <input type="checkbox" class="bearbit-settings-checkbox" id="hide-gay" ${settings.HIDE_GAY ? 'checked' : ''}>
-                    ซ่อนหมวดสีรุ้ง
-                </label>
-                <label class="bearbit-settings-label">
                     <input type="checkbox" class="bearbit-settings-checkbox" id="hide-desc" ${settings.HIDE_DESC ? 'checked' : ''}>
                     ซ่อนคำอธิบายใต้ชื่อไฟล์
                 </label>
@@ -560,14 +552,12 @@
     function saveSettings() {
         const sizeSelect = document.getElementById('thumbnail-size-select');
         const newSettings = {
-            HIDE_GAY: document.getElementById('hide-gay').checked,
             HIDE_DESC: document.getElementById('hide-desc').checked,
             PREVIEW: document.getElementById('preview').checked,
             THUMBNAIL_SIZE: sizeSelect.value,
         };
 
         // Save to storage
-        GM_setValue('HIDE_GAY', newSettings.HIDE_GAY);
         GM_setValue('HIDE_DESC', newSettings.HIDE_DESC);
         GM_setValue('PREVIEW', newSettings.PREVIEW);
         GM_setValue('THUMBNAIL_SIZE', newSettings.THUMBNAIL_SIZE);
@@ -581,7 +571,6 @@
 
     function resetSettings() {
         if (confirm('Reset all settings to defaults?')) {
-            GM_setValue('HIDE_GAY', defaultSettings.HIDE_GAY);
             GM_setValue('HIDE_STICKY', defaultSettings.HIDE_STICKY);
             GM_setValue('HIDE_DESC', defaultSettings.HIDE_DESC);
             GM_setValue('PREVIEW', defaultSettings.PREVIEW);
@@ -1168,27 +1157,6 @@
         tryThank();
     }
 
-    function hideGayContents() {
-        if(!settings.HIDE_GAY) return;
-            const input = document.querySelector("input[name='c908']");
-            if (input) {
-                const td = input.closest('td');
-                if (td) {
-                    td.style.display = 'none';
-                }
-            }
-
-            document.querySelectorAll('a[href="viewbrsb.php?cat=908"]').forEach(link => {
-                const row = link.closest('tr');
-                if (row) {
-                    const hasCategoryInput = row.querySelector('input[name="c908"]');
-                    if (!hasCategoryInput) {
-                        row.style.display = 'none';
-                    }
-                }
-            });
-    }
-
     function setupHoverDetection() {
         if(!settings.PREVIEW){
             return;
@@ -1360,7 +1328,6 @@
         hideHotTorrentSection()
         filters();
         autoThank();
-        hideGayContents();
         hideColumns();
         hideDescription();
         createSettingsButton();
