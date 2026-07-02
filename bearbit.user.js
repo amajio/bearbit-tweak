@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    https://bearbit.org/
-// @version      26.7.02.2302
+// @version      26.7.03.0000
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -1086,20 +1086,88 @@
 
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(response.responseText, "text/html");
-                        const downloadBtn = doc.querySelector('a[href^="downloadnew.php"]');
+                        const downloadBtn = doc.querySelector('a[href^="downloadnew.php"]')
 
                         if (downloadBtn) {
-                            let downloadUrl = downloadBtn.href
+                            let downloadUrl = downloadBtn.href;
                             const fullDownloadUrl = downloadUrl.startsWith('http')
                             ? downloadUrl
                             : `${baseUrl}${downloadUrl}`;
 
-                            this.dataset.loading = 'false';
-                            window.location.href = fullDownloadUrl;
-                            this.innerHTML = currentState.html;
-                            this.style.cursor = currentState.cursor;
+                            GM_xmlhttpRequest({
+                                method: "GET",
+                                url: fullDownloadUrl,
+                                timeout: 10000,
+                                onload: (secondResponse) => {
+                                    if (secondResponse.status !== 200) {
+                                        console.error(`Failed to load ${fullDownloadUrl}: ${secondResponse.status}`);
+                                        this.innerHTML = '❌ ล้มเหลว';
+                                        this.style.cursor = 'pointer';
+                                        setTimeout(() => {
+                                            this.innerHTML = currentState.html;
+                                            this.style.cursor = currentState.cursor;
+                                            this.dataset.loading = 'false';
+                                        }, 2000);
+                                        return;
+                                    }
+
+                                    const secondParser = new DOMParser();
+                                    const secondDoc = secondParser.parseFromString(secondResponse.responseText, "text/html");
+
+                                    const bbDlBtn = secondDoc.getElementById('bbDlBtn');
+
+                                    if (bbDlBtn) {
+                                        let finalDownloadUrl = bbDlBtn.href;
+                                        const fullFinalUrl = finalDownloadUrl.startsWith('http')
+                                        ? finalDownloadUrl
+                                        : `${baseUrl}${finalDownloadUrl}`;
+
+                                        this.dataset.loading = 'false';
+                                        this.innerHTML = currentState.html;
+                                        this.style.cursor = currentState.cursor;
+                                        const link = document.createElement('a');
+                                        link.href = fullFinalUrl;
+                                        link.download = '';
+                                        link.target = '_blank';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        setTimeout(() => {
+                                            document.body.removeChild(link);
+                                        }, 100);
+                                    } else {
+                                        this.innerHTML = '❌ ไม่พบ bbDlBtn';
+                                        this.style.cursor = 'pointer';
+                                        setTimeout(() => {
+                                            this.innerHTML = currentState.html;
+                                            this.style.cursor = currentState.cursor;
+                                            this.dataset.loading = 'false';
+                                        }, 2000);
+                                    }
+                                },
+                                onerror: (error) => {
+                                    console.error(`Request failed for ${fullDownloadUrl}:`, error);
+                                    this.innerHTML = '❌ เครือข่ายผิดพลาด';
+                                    this.style.cursor = 'pointer';
+                                    setTimeout(() => {
+                                        this.innerHTML = currentState.html;
+                                        this.style.cursor = currentState.cursor;
+                                        this.dataset.loading = 'false';
+                                    }, 2000);
+                                },
+                                ontimeout: () => {
+                                    console.warn(`Request timeout for ${fullDownloadUrl}`);
+                                    this.innerHTML = '⏰ เวลาหมด';
+                                    this.style.cursor = 'pointer';
+                                    setTimeout(() => {
+                                        this.innerHTML = currentState.html;
+                                        this.style.cursor = currentState.cursor;
+                                        this.dataset.loading = 'false';
+                                    }, 2000);
+                                }
+                            });
+
                         } else {
-                            this.innerHTML = '❌ ไม่พบลิงก์';
+                            this.innerHTML = '❌ ไม่พบลิงก์ดาวน์โหลด';
                             this.style.cursor = 'pointer';
                             setTimeout(() => {
                                 this.innerHTML = currentState.html;
