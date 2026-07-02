@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    https://bearbit.org/
-// @version      26.6.20.0258
+// @version      26.7.02.2302
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -743,10 +743,10 @@
         });
     }
 
-    function hideDiv(row){
-        const div = row.querySelectorAll('div');
-        div.forEach(d => {
-            d.style.display = 'none';
+    function hideBBVip(){
+        const div_vip = document.querySelectorAll('.bb-file-actions');
+        div_vip.forEach(div => {
+            div.style.setProperty('display', 'none','important');
         });
     }
 
@@ -916,6 +916,7 @@
 
     function actionsButton() {
         cleanupButtons();
+        hideBBVip();
         const posterRows = document.querySelectorAll('tr td[class="poster-column"]');
         const baseUrl = "https://bearbit.org/";
 
@@ -950,7 +951,7 @@
                 }
             }
 
-            hideDiv(row);
+            //hideDiv(row);
             row.querySelector('img[src="pic/cams.gif "]')?.style.setProperty('display', 'none');
             const originalBookmark = row.querySelector(`${bookmarkClass}`);
             const divGroup = document.createElement('div');
