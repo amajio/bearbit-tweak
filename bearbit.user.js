@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    https://bearbit.org/
-// @version      26.7.03.0000
+// @version      26.7.03.1807
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -11,6 +11,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
+// @grant        GM_download
 // @updateURL    https://raw.githubusercontent.com/amajio/bearbit-tweak/master/bearbit.user.js
 // @downloadURL  https://raw.githubusercontent.com/amajio/bearbit-tweak/master/bearbit.user.js
 // @connect      bearbit.org
@@ -1071,7 +1072,7 @@
                     method: "GET",
                     url: storedUrl,
                     timeout: 10000,
-                    onload: (response) => {
+                    onload: function(response) {
                         if (response.status !== 200) {
                             console.error(`Failed to load ${storedUrl}: ${response.status}`);
                             this.innerHTML = '❌ ล้มเหลว';
@@ -1098,7 +1099,7 @@
                                 method: "GET",
                                 url: fullDownloadUrl,
                                 timeout: 10000,
-                                onload: (secondResponse) => {
+                                onload: function(secondResponse) {
                                     if (secondResponse.status !== 200) {
                                         console.error(`Failed to load ${fullDownloadUrl}: ${secondResponse.status}`);
                                         this.innerHTML = '❌ ล้มเหลว';
@@ -1122,17 +1123,109 @@
                                         ? finalDownloadUrl
                                         : `${baseUrl}${finalDownloadUrl}`;
 
+                                        // Show waiting message
+                                        this.innerHTML = '⏳ รอลิงค์ดาวน์โหลด...';
+                                        this.style.cursor = 'wait';
                                         this.dataset.loading = 'false';
-                                        this.innerHTML = currentState.html;
-                                        this.style.cursor = currentState.cursor;
-                                        const link = document.createElement('a');
-                                        link.href = fullFinalUrl;
-                                        link.target = '_blank';
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        setTimeout(() => {
-                                            document.body.removeChild(link);
-                                        }, 100);
+
+                                        try {
+                                            const iframe = document.createElement('iframe');
+                                            iframe.style.display = 'none';
+                                            iframe.src = fullFinalUrl;
+                                            document.body.appendChild(iframe);
+
+                                            const self = this;
+
+                                            iframe.addEventListener('load', function() {
+                                                try {
+                                                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                                                    // Wait for button to appear
+                                                    const waitForButton = setInterval(function() {
+                                                        const button = iframeDoc.getElementById('bbDlBtn');
+
+                                                        if (button) {
+                                                            clearInterval(waitForButton);
+
+                                                            // Create observer to watch class changes
+                                                            const observer = new MutationObserver(function(mutations) {
+                                                                mutations.forEach(function(mutation) {
+                                                                    if (mutation.type === 'attributes' &&
+                                                                        mutation.attributeName === 'class') {
+                                                                        const isDisabled = button.classList.contains('bb-disabled');
+
+                                                                        if (!isDisabled) {
+                                                                            self.innerHTML = '✅ กำลังดาวน์โหลด...';
+                                                                            self.style.cursor = 'pointer';
+                                                                            button.click();
+                                                                            observer.disconnect();
+                                                                            setTimeout(function() {
+                                                                                document.body.removeChild(iframe);
+                                                                                self.innerHTML = currentState.html;
+                                                                                self.style.cursor = currentState.cursor;
+                                                                            }, 3000);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            });
+
+                                                            // Start observing
+                                                            observer.observe(button, {
+                                                                attributes: true,
+                                                                attributeFilter: ['class']
+                                                            });
+
+                                                            // Check initial state
+                                                            if (!button.classList.contains('bb-disabled')) {
+                                                                self.innerHTML = '✅ กำลังดาวน์โหลด...';
+                                                                self.style.cursor = 'pointer';
+                                                                button.click();
+                                                                observer.disconnect();
+                                                                setTimeout(function() {
+                                                                    document.body.removeChild(iframe);
+                                                                    self.innerHTML = currentState.html;
+                                                                    self.style.cursor = currentState.cursor;
+                                                                }, 3000);
+                                                            }
+                                                        }
+                                                    }, 500);
+
+                                                } catch (error) {
+                                                    console.error('Cannot access iframe content:', error);
+                                                    self.innerHTML = '❌ ข้อผิดพลาด';
+                                                    self.style.cursor = 'pointer';
+                                                    setTimeout(function() {
+                                                        self.innerHTML = currentState.html;
+                                                        self.style.cursor = currentState.cursor;
+                                                        document.body.removeChild(iframe);
+                                                    }, 2000);
+                                                }
+                                            });
+
+                                            // Timeout if iframe takes too long
+                                            setTimeout(function() {
+                                                if (iframe.parentNode) {
+                                                    document.body.removeChild(iframe);
+                                                    if (self.innerHTML === '⏳ รอลิงค์ดาวน์โหลด...') {
+                                                        self.innerHTML = '⏰ หมดเวลารอ';
+                                                        self.style.cursor = 'pointer';
+                                                        setTimeout(function() {
+                                                            self.innerHTML = currentState.html;
+                                                            self.style.cursor = currentState.cursor;
+                                                        }, 2000);
+                                                    }
+                                                }
+                                            }, 30000); // 30 second timeout
+
+                                        } catch (error) {
+                                            console.log('Iframe loading issue:', error.message);
+                                            this.innerHTML = '❌ ข้อผิดพลาด';
+                                            this.style.cursor = 'pointer';
+                                            setTimeout(() => {
+                                                this.innerHTML = currentState.html;
+                                                this.style.cursor = currentState.cursor;
+                                            }, 2000);
+                                        }
                                     } else {
                                         this.innerHTML = '❌ ไม่พบ bbDlBtn';
                                         this.style.cursor = 'pointer';
@@ -1142,8 +1235,8 @@
                                             this.dataset.loading = 'false';
                                         }, 2000);
                                     }
-                                },
-                                onerror: (error) => {
+                                }.bind(this),
+                                onerror: function(error) {
                                     console.error(`Request failed for ${fullDownloadUrl}:`, error);
                                     this.innerHTML = '❌ เครือข่ายผิดพลาด';
                                     this.style.cursor = 'pointer';
@@ -1152,8 +1245,8 @@
                                         this.style.cursor = currentState.cursor;
                                         this.dataset.loading = 'false';
                                     }, 2000);
-                                },
-                                ontimeout: () => {
+                                }.bind(this),
+                                ontimeout: function() {
                                     console.warn(`Request timeout for ${fullDownloadUrl}`);
                                     this.innerHTML = '⏰ เวลาหมด';
                                     this.style.cursor = 'pointer';
@@ -1162,7 +1255,7 @@
                                         this.style.cursor = currentState.cursor;
                                         this.dataset.loading = 'false';
                                     }, 2000);
-                                }
+                                }.bind(this)
                             });
 
                         } else {
@@ -1174,8 +1267,8 @@
                                 this.dataset.loading = 'false';
                             }, 2000);
                         }
-                    },
-                    onerror: (error) => {
+                    }.bind(this),
+                    onerror: function(error) {
                         console.error(`Request failed for ${storedUrl}:`, error);
                         this.innerHTML = '❌ เครือข่ายผิดพลาด';
                         this.style.cursor = 'pointer';
@@ -1184,8 +1277,8 @@
                             this.style.cursor = currentState.cursor;
                             this.dataset.loading = 'false';
                         }, 2000);
-                    },
-                    ontimeout: () => {
+                    }.bind(this),
+                    ontimeout: function() {
                         console.warn(`Request timeout for ${storedUrl}`);
                         this.innerHTML = '⏰ เวลาหมด';
                         this.style.cursor = 'pointer';
@@ -1194,7 +1287,7 @@
                             this.style.cursor = currentState.cursor;
                             this.dataset.loading = 'false';
                         }, 2000);
-                    }
+                    }.bind(this)
                 });
             };
 
