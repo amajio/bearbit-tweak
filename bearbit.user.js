@@ -1508,12 +1508,12 @@
     });
 
     function init() {
-        actionsButton();
-        hideHotTorrentSection()
+		hideHotTorrentSection()
         filters();
-        autoThank();
-        hideColumns();
+        actionsButton();
+		hideColumns();
         hideDescription();
+        autoThank();
         createSettingsButton();
         setupHoverDetection();
     }
