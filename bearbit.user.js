@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BearBit Tweak
 // @namespace    https://bearbit.org/
-// @version      26.7.03.1807
+// @version      26.7.04.1048
 // @description  BearBit Tweak
 // @author       riffburn
 // @match       https://bearbit.org/viewno18sbx.php*
@@ -646,31 +646,47 @@
     }
 
     function hideColumns(){
-        const column_number = [10,7,6]; // เสร็จ / ติชม / ไฟล์ //[13,12,11,10,9,8,7,6,5,4];
+        const text_header = ['ไฟล์','ติชม','เสร็จ'];
         const headers = document.querySelectorAll('.colhead.poster-column');
+
         headers.forEach(head => {
             const table = head.closest('table');
+            const headerRow = table.querySelector('tr');
             const rows = table.querySelectorAll('tr');
-            rows.forEach(row=>{
-                column_number.forEach(col => {
+
+            const columnsToHide = [];
+            let columnsUploader = null;
+            const headerCells = headerRow.querySelectorAll('th, td');
+
+            headerCells.forEach((cell, index) => {
+                const cellText = cell.textContent.trim();
+                if (text_header.includes(cellText)) {
+                    columnsToHide.push(index + 1);
+                }
+                if(cellText == 'ผู้ปล่อยไฟล์') columnsUploader = index + 1;
+            });
+
+            rows.forEach(row => {
+                // Hide uploader avatar
+                if(columnsUploader){
+                    const uploader = row.querySelector(`td:nth-child(${columnsUploader})`);
+                    if (uploader) {
+                        uploader.style.width = 'auto';
+                        const children = uploader.children;
+                        for (let i = 0; i < children.length; i++) {
+                            if (children[i].tagName !== 'A') {
+                                children[i].style.display = 'none';
+                            }
+                        }
+                    }
+                }
+                //Hide column
+                columnsToHide.forEach(col => {
                     let el = row.querySelector(`td:nth-child(${col})`);
                     if (el) el.style.display = 'none';
                 });
             });
         });
-    }
-
-    function hideUploaderAvartar(row){
-        const uploader = row.querySelector('td:nth-child(13)');
-        if (uploader) {
-            uploader.style.width = 'auto';
-            const children = uploader.children;
-            for (let i = 0; i < children.length; i++) {
-                if (children[i].tagName !== 'A') {
-                    children[i].style.display = 'none';
-                }
-            }
-        }
     }
 
     function hideDescription(){
@@ -928,18 +944,18 @@
             const link = row.querySelector('a[href^="details.php"]');
             if (!link) return;
 
-            const sizeCell = row.querySelector('td:nth-child(9)');
+            const sizeCell = row.querySelector('.bb-lock-download');
             let fileSize = ' - '
             let numericSize = 0;
             let sizeUnit = '';
 
             if (sizeCell) {
                 const sizeText = sizeCell.innerText.trim();
-                const match = sizeText.match(/^([\d.]+)\s+(TB|GB|MB|KB)$/i);
+                const match = sizeText.match(/\(([\d.]+)\s*([kK][bB]|[mM][bB]|[gG][bB]|[tT][bB])\)/);
                 if (match) {
-                    fileSize = sizeText;
                     numericSize = parseFloat(match[1]);
                     sizeUnit = match[2].toUpperCase();
+                     fileSize = `${numericSize} ${sizeUnit}`;
 
                     // Convert to GB for comparison
                     if (sizeUnit === 'TB') {
@@ -972,7 +988,7 @@
             btnDownload.title = 'คลิกเพื่อดาวน์โหลด';
 
             const btnImage = document.createElement('a');
-            const camsImg = row.querySelector('img[src="pic/cams.gif "]')?.closest('a').href;
+            const camsImg = row.querySelector('.bb-preview-btn')?.href;
             btnImage.textContent = `📷 รูป`;
             btnImage.style.cursor = 'pointer';
             btnImage.className = 'bb-preview';
@@ -1026,9 +1042,7 @@
             divGroup.appendChild(btnBookmark);
             nameCell.appendChild(divGroup);
 
-            hideUploaderAvartar(row);
             cleanWhitespace(row);
-
             if (!btnDownload || btnDownload.dataset.processed === 'true') return;
 
             const targetUrl = `${baseUrl}${link.getAttribute('href')}`;
@@ -1095,6 +1109,11 @@
                             ? downloadUrl
                             : `${baseUrl}${downloadUrl}`;
 
+                            // 🔥 FIX: Set loading to true BEFORE showing "รอลิงค์ดาวน์โหลด..."
+                            this.dataset.loading = 'true';
+                            this.innerHTML = '⏳ รอลิงค์ดาวน์โหลด...';
+                            this.style.cursor = 'wait';
+
                             GM_xmlhttpRequest({
                                 method: "GET",
                                 url: fullDownloadUrl,
@@ -1114,7 +1133,6 @@
 
                                     const secondParser = new DOMParser();
                                     const secondDoc = secondParser.parseFromString(secondResponse.responseText, "text/html");
-
                                     const bbDlBtn = secondDoc.getElementById('bbDlBtn');
 
                                     if (bbDlBtn) {
@@ -1123,10 +1141,10 @@
                                         ? finalDownloadUrl
                                         : `${baseUrl}${finalDownloadUrl}`;
 
-                                        // Show waiting message
+                                        // Keep loading state true
+                                        this.dataset.loading = 'true';
                                         this.innerHTML = '⏳ รอลิงค์ดาวน์โหลด...';
                                         this.style.cursor = 'wait';
-                                        this.dataset.loading = 'false';
 
                                         try {
                                             const iframe = document.createElement('iframe');
@@ -1140,14 +1158,12 @@
                                                 try {
                                                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-                                                    // Wait for button to appear
                                                     const waitForButton = setInterval(function() {
                                                         const button = iframeDoc.getElementById('bbDlBtn');
 
                                                         if (button) {
                                                             clearInterval(waitForButton);
 
-                                                            // Create observer to watch class changes
                                                             const observer = new MutationObserver(function(mutations) {
                                                                 mutations.forEach(function(mutation) {
                                                                     if (mutation.type === 'attributes' &&
@@ -1163,19 +1179,19 @@
                                                                                 document.body.removeChild(iframe);
                                                                                 self.innerHTML = currentState.html;
                                                                                 self.style.cursor = currentState.cursor;
+                                                                                // 🔥 FIX: Re-enable button after download starts
+                                                                                self.dataset.loading = 'false';
                                                                             }, 3000);
                                                                         }
                                                                     }
                                                                 });
                                                             });
 
-                                                            // Start observing
                                                             observer.observe(button, {
                                                                 attributes: true,
                                                                 attributeFilter: ['class']
                                                             });
 
-                                                            // Check initial state
                                                             if (!button.classList.contains('bb-disabled')) {
                                                                 self.innerHTML = '✅ กำลังดาวน์โหลด...';
                                                                 self.style.cursor = 'pointer';
@@ -1185,6 +1201,8 @@
                                                                     document.body.removeChild(iframe);
                                                                     self.innerHTML = currentState.html;
                                                                     self.style.cursor = currentState.cursor;
+                                                                    // 🔥 FIX: Re-enable button after download starts
+                                                                    self.dataset.loading = 'false';
                                                                 }, 3000);
                                                             }
                                                         }
@@ -1198,6 +1216,8 @@
                                                         self.innerHTML = currentState.html;
                                                         self.style.cursor = currentState.cursor;
                                                         document.body.removeChild(iframe);
+                                                        // 🔥 FIX: Re-enable button on error
+                                                        self.dataset.loading = 'false';
                                                     }, 2000);
                                                 }
                                             });
@@ -1212,10 +1232,12 @@
                                                         setTimeout(function() {
                                                             self.innerHTML = currentState.html;
                                                             self.style.cursor = currentState.cursor;
+                                                            // 🔥 FIX: Re-enable button on timeout
+                                                            self.dataset.loading = 'false';
                                                         }, 2000);
                                                     }
                                                 }
-                                            }, 30000); // 30 second timeout
+                                            }, 30000);
 
                                         } catch (error) {
                                             console.log('Iframe loading issue:', error.message);
@@ -1224,6 +1246,7 @@
                                             setTimeout(() => {
                                                 this.innerHTML = currentState.html;
                                                 this.style.cursor = currentState.cursor;
+                                                this.dataset.loading = 'false';
                                             }, 2000);
                                         }
                                     } else {
